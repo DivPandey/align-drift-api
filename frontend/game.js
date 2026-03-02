@@ -19,6 +19,7 @@
   let dragOffset = { x: 0, y: 0 };
   let time = 0;
   let audioCtx = null;
+  let initialized = false;
 
   // --------------- Audio ---------------
 
@@ -66,6 +67,30 @@
 
   function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
   function lerp(a, b, t) { return a + (b - a) * Math.min(1, t); }
+
+  // --------------- Responsive resize ---------------
+
+  function resizeCanvas() {
+    if (!canvas) return;
+    const wrap = canvas.parentElement;
+    const availW = wrap ? wrap.clientWidth : Math.min(800, window.innerWidth - 24);
+    const newW = Math.max(280, Math.min(800, availW));
+    const newH = Math.round(newW * (600 / 800));
+    canvas.width  = newW;
+    canvas.height = newH;
+    config.canvasWidth  = newW;
+    config.canvasHeight = newH;
+    if (initialized) {
+      createZones();
+      createShapes();
+    }
+  }
+
+  let resizeTimer;
+  function onWindowResize() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resizeCanvas, 150);
+  }
 
   // --------------- Layout ---------------
 
@@ -377,9 +402,13 @@
     canvas.addEventListener('touchmove',  onMove, { passive: false });
     canvas.addEventListener('touchend',   onUp,   { passive: false });
 
+    window.addEventListener('resize', onWindowResize);
+
     (async () => {
       await loadConfig();
+      resizeCanvas();
       await loadProgress();
+      initialized = true;
       requestAnimationFrame(animate);
     })();
   }
